@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WinliamOS</title>
+<style>
+:root{--win-bg-start:#0a74da;--win-bg-end:#003f91}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Segoe UI, Roboto, system-ui, -apple-system, Arial;}
+body{color:#fff;transition:background .35s ease;background: linear-gradient(to bottom right, var(--win-bg-start), var(--win-bg-end));background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden;position:relative;}
+#desktop{position:absolute;left:0;top:0;width:100%;height:100%;}
+.taskbar{position:fixed;left:0;right:0;bottom:0;height:56px;background:rgba(10,10,12,.6);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;gap:18px;padding:8px;z-index:1000;}
+.icon{width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.window{position:absolute;width:520px;height:360px;background:linear-gradient(180deg,#0b1220,#071226);border-radius:10px;border:1px solid rgba(255,255,255,.04);box-shadow:0 18px 60px rgba(2,6,23,.6);display:none;flex-direction:column;overflow:hidden;resize:both;z-index:500;}
+.titlebar{height:44px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:linear-gradient(180deg,rgba(255,255,255,.01),transparent);cursor:grab;user-select:none;}
+.titlebar .left{display:flex;align-items:center;gap:10px}
+.titlebar .title{font-weight:700}
+.titlebar .controls{display:flex;gap:8px}
+.control{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.min{background:#f59e0b}
+.max{background:#10b981}
+.close{background:#ef4444;cursor:pointer}
+.content{flex:1;padding:12px;overflow:auto;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));display:flex;flex-direction:column;}
+input[type=text], textarea{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.35);color:#eaf2ff;outline:none}
+button.btn{padding:8px 10px;border-radius:6px;border:none;background:#2563eb;color:#fff;cursor:pointer}
+.notepad textarea{height:220px;resize:vertical;font-family:monospace;font-size:14px;color:#e6f0ff}
+iframe{border-radius:6px;border:1px solid rgba(255,255,255,.04);margin-top:10px;flex:1;}
+.row{display:flex;gap:8px;align-items:center}
+.terminal{background:#000;color:#33ff66;font-family:monospace;padding:10px;border-radius:6px;height:260px;display:flex;flex-direction:column}
+.term-output{flex:1;overflow:auto;white-space:pre-wrap;font-size:13px}
+.term-input{display:flex;gap:8px;margin-top:8px}
+.term-input input{flex:1;background:transparent;border:1px solid rgba(51,255,102,0.12);padding:8px;color:#33ff66}
+.term-input button{background:#093;color:#001;border:none;padding:8px;border-radius:6px;cursor:pointer}
+.desktop-icon{position:absolute;width:80px;height:80px;background:rgba(255,255,255,.05);color:#fff;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;flex-direction:column;text-align:center;font-size:12px;}
+@media (max-width:640px){.window{width:92vw;height:62vh}}
+</style>
+</head>
+<body>
+<div id="desktop"></div>
+
+<div id="recycleBin" class="desktop-icon" style="left:10px;top:10px;">🗑️<br>Recycle Bin</div>
+
+<div id="startWindow" class="window" style="left:40px;top:40px;display:flex;z-index:200;">
+  <div class="titlebar" data-win="startWindow"><div class="left"><div class="title">Welcome — WinliamOS</div></div><div class="controls"><div class="control close" data-action="close" data-win="startWindow"></div></div></div>
+  <div class="content"><p>Welcome! Use the desktop icons to open apps: Browser, Background Editor, Notepad, Terminal.</p></div>
+</div>
+
+<div id="browserWindow" class="window" style="left:80px;top:80px;z-index:200;">
+  <div class="titlebar" data-win="browserWindow"><div class="left"><div class="title">Web Browser</div></div><div class="controls"><div class="control close" data-action="close" data-win="browserWindow"></div></div></div>
+  <div class="content">
+    <div class="row"><input id="browserURL" type="text" placeholder="https://example.com"><button class="btn" id="browserGo">Go</button></div>
+    <iframe id="browserFrame" src="about:blank"></iframe>
+  </div>
+</div>
+
+<div id="bgEditorWindow" class="window" style="left:120px;top:120px;z-index:200;">
+  <div class="titlebar" data-win="bgEditorWindow"><div class="left"><div class="title">Background Editor</div></div><div class="controls"><div class="control close" data-action="close" data-win="bgEditorWindow"></div></div></div>
+  <div class="content">
+    <p>Enter an image or GIF URL and click Set. Your choice is saved.</p>
+    <div class="row"><input id="bgURL" type="text" placeholder="Image or GIF URL"><button class="btn" id="bgSet">Set Background</button><button class="btn" id="bgReset">Reset</button></div>
+  </div>
+</div>
+
+<div id="notepadWindow" class="window" style="left:160px;top:160px;z-index:200;">
+  <div class="titlebar" data-win="notepadWindow"><div class="left"><div class="title">Notepad</div></div><div class="controls"><div class="control close" data-action="close" data-win="notepadWindow"></div></div></div>
+  <div class="content notepad">
+    <input id="noteTitle" type="text" placeholder="Untitled note"><textarea id="noteBody" placeholder="Type your notes here..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="saveNote">Save Note</button><button class="btn" id="clearNote">Clear</button><div style="margin-left:auto;opacity:.8;font-size:12px" id="noteSaved">Not saved yet</div></div>
+  </div>
+</div>
+
+<div id="terminalWindow" class="window" style="left:200px;top:200px;z-index:200;">
+  <div class="titlebar" data-win="terminalWindow"><div class="left"><div class="title">Terminal</div></div><div class="controls"><div class="control close" data-action="close" data-win="terminalWindow"></div></div></div>
+  <div class="content">
+    <div class="terminal">
+      <div class="term-output" id="termOut">Welcome to WinliamOS Terminal. Type `help` for commands.</div>
+      <div class="term-input"><input id="termIn" type="text" placeholder="Enter command"><button id="termSend">Run</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="taskbar">
+  <div class="icon" title="Start" id="btnStart">🏠</div>
+  <div class="icon" title="Browser" id="btnBrowser">🌐</div>
+  <div class="icon" title="Background" id="btnBg">🎨</div>
+  <div class="icon" title="Notepad" id="btnNotepad">📝</div>
+  <div class="icon" title="Terminal" id="btnTerminal">⌨️</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function show(win){$(win).style.display='flex';}
+function hide(win){$(win).style.display='none';}
+function toggle(win){const el=$(win);el.style.display=(getComputedStyle(el).display==='flex')?'none':'flex';}
+
+function makeWindow(win){
+  const tb = win.querySelector('.titlebar');
+  let isDragging=false, offsetX=0, offsetY=0, isMax=false, prevRect={};
+
+  tb.addEventListener('pointerdown', e=>{
+    if(e.target.classList.contains('close')) return;
+    isDragging=true;
+    offsetX = e.clientX - win.offsetLeft;
+    offsetY = e.clientY - win.offsetTop;
+    tb.setPointerCapture(e.pointerId);
+  });
+
+  tb.addEventListener('pointermove', e=>{
+    if(!isDragging) return;
+    win.style.left = (e.clientX - offsetX)+'px';
+    win.style.top = (e.clientY - offsetY)+'px';
+  });
+
+  tb.addEventListener('pointerup', e=>{
+    isDragging=false;
+    tb.releasePointerCapture(e.pointerId);
+  });
+
+  tb.addEventListener('pointercancel', e=>{
+    isDragging=false;
+    tb.releasePointerCapture(e.pointerId);
+  });
+
+  tb.addEventListener('dblclick', ()=>{
+    if(!isMax){
+      prevRect={left:win.offsetLeft,top:win.offsetTop,width:win.offsetWidth,height:win.offsetHeight};
+      win.style.left='0px'; win.style.top='0px'; win.style.width='100%'; win.style.height='calc(100% - 56px)';
+      isMax=true;
+    } else {
+      win.style.left=prevRect.left+'px'; win.style.top=prevRect.top+'px';
+      win.style.width=prevRect.width+'px'; win.style.height=prevRect.height+'px';
+      isMax=false;
+    }
+  });
+
+  const closeBtn = win.querySelector('.control.close');
+  if(closeBtn) closeBtn.addEventListener('click', ()=>hide(win.id));
+}
+
+['startWindow','browserWindow','bgEditorWindow','notepadWindow','terminalWindow'].forEach(id=>makeWindow($(id)));
+$('btnStart').addEventListener('click',()=>toggle('startWindow'));
+$('btnBrowser').addEventListener('click',()=>toggle('browserWindow'));
+$('btnBg').addEventListener('click',()=>toggle('bgEditorWindow'));
+$('btnNotepad').addEventListener('click',()=>toggle('notepadWindow'));
+$('btnTerminal').addEventListener('click',()=>toggle('terminalWindow'));
+
+$('browserGo').addEventListener('click',()=>{$('browserFrame').src=$('browserURL').value});
+$('bgSet').addEventListener('click',()=>{document.body.style.background='url('+$('bgURL').value+') center/cover no-repeat'});
+$('bgReset').addEventListener('click',()=>{document.body.style.background='linear-gradient(to bottom right, var(--win-bg-start), var(--win-bg-end))'});
+
+// ======================
+// 🌄 BACKGROUND PRESETS
+// ======================
+
+// list of preset filenames (put your actual filenames here)
+const presetImages = [
+  "Windows 11.jpg",
+    "Windows 10.png",
+     "city.jpeg",
+      "earth.jpeg"
+];
+
+// create buttons for each preset inside bgEditorWindow
+window.addEventListener('load', ()=>{
+  const bgContent = $('bgEditorWindow').querySelector('.content');
+  const presetContainer = document.createElement('div');
+  presetContainer.style.display = 'flex';
+  presetContainer.style.flexWrap = 'wrap';
+  presetContainer.style.gap = '8px';
+  presetContainer.style.marginTop = '10px';
+
+  presetImages.forEach(name=>{
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = name;
+    btn.style.backgroundImage = `url('presets/${name}')`;
+    btn.style.backgroundSize = 'cover';
+    btn.style.color = '#fff';
+    btn.style.width = '100px';
+    btn.style.height = '60px';
+    btn.style.border = '1px solid rgba(255,255,255,.1)';
+    btn.style.textShadow = '0 1px 2px #000';
+    btn.addEventListener('click', ()=>{
+      document.body.style.background = `url('presets/${name}') center/cover no-repeat`;
+    });
+    presetContainer.appendChild(btn);
+  });
+
+  bgContent.appendChild(presetContainer);
+});
+
+// ======================
+// 📝 NOTES + RECYCLE BIN
+// ======================
+let notes = JSON.parse(localStorage.getItem('notes')||'{}');
+let recycleBinNotes = JSON.parse(localStorage.getItem('recycleBin')||'{}');
+const desktop = $('desktop');
+
+function addDesktopIcon(id, title){
+  const icon = document.createElement('div');
+  icon.className='desktop-icon';
+  icon.style.left = Math.random()*400 + 'px';
+  icon.style.top = Math.random()*200 + 'px';
+  icon.innerHTML = title || 'Untitled';
+  icon.addEventListener('dblclick', ()=>openNoteWindow(id));
+  desktop.appendChild(icon);
+}
+
+function openNoteWindow(id){
+  const note = notes[id];
+  if(!note) return;
+  const newWin = $('notepadWindow').cloneNode(true);
+  newWin.id = 'notepad_'+id;
+  newWin.querySelector('#noteTitle').value = note.title;
+  newWin.querySelector('#noteBody').value = note.body;
+  document.body.appendChild(newWin);
+  makeWindow(newWin);
+  newWin.style.display='flex';
+  newWin.addEventListener('contextmenu', e=>{
+    e.preventDefault();
+    recycleBinNotes[id]=note;
+    delete notes[id];
+    localStorage.setItem('notes', JSON.stringify(notes));
+    localStorage.setItem('recycleBin', JSON.stringify(recycleBinNotes));
+    newWin.remove();
+    alert('Moved to Recycle Bin');
+  });
+}
+
+window.addEventListener('load',()=>{
+  for(const id in notes){ addDesktopIcon(id, notes[id].title); }
+});
+
+$('saveNote').addEventListener('click',()=>{
+  const title = $('noteTitle').value || 'Untitled';
+  const body = $('noteBody').value;
+  const id = 'note_'+Date.now();
+  notes[id]={title, body};
+  localStorage.setItem('notes', JSON.stringify(notes));
+  addDesktopIcon(id, title);
+  $('noteSaved').textContent='Saved';
+});
+
+$('clearNote').addEventListener('click',()=>{
+  $('noteTitle').value='';
+  $('noteBody').value='';
+  $('noteSaved').textContent='Cleared';
+});
+</script>
+
+</body>
+</html>
+
